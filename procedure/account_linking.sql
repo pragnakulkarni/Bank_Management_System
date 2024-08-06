@@ -1,0 +1,46 @@
+create or replace PROCEDURE ACCOUNT_LINKING(P_USER_ID USERS.USER_ID%TYPE)
+IS
+    CURSOR ACCOUNT_LINKING_CURSOR IS
+        SELECT * FROM ACCOUNT WHERE USER_ID = P_USER_ID;
+    V_USER_ID USERS.USER_ID%TYPE := NULL;
+BEGIN
+    SELECT USER_ID INTO V_USER_ID FROM USERS WHERE USER_ID = P_USER_ID;
+    IF V_USER_ID IS NULL THEN
+        RAISE NO_DATA_FOUND;
+    ELSE
+        DBMS_OUTPUT.PUT_LINE(RPAD('-',180,'-'));
+        DBMS_OUTPUT.PUT_LINE
+            (
+                RPAD('ACCOUNT_ID', 18) || 
+                RPAD('USER_ID', 18) ||
+                RPAD('ACCOUNT_TYPE', 18) ||
+                RPAD('IFSC_CODE', 18) ||
+                RPAD('CURRENCY_CODE', 18) ||
+                RPAD('CREATED_AT', 35) ||
+                RPAD('IS_LOCKED', 18) ||
+                RPAD('PASSWORD', 18) ||
+                RPAD('ACTIVE_STATUS', 18)
+            );
+        DBMS_OUTPUT.PUT_LINE(RPAD('-',180,'-'));
+        FOR I_ACCOUNT_LINKING_CURSOR IN ACCOUNT_LINKING_CURSOR
+        LOOP
+            DBMS_OUTPUT.PUT_LINE
+            (
+                RPAD(I_ACCOUNT_LINKING_CURSOR.ACCOUNT_ID, 18) || 
+                RPAD(I_ACCOUNT_LINKING_CURSOR.USER_ID, 18) ||
+                RPAD(I_ACCOUNT_LINKING_CURSOR.ACCOUNT_TYPE, 18) ||
+                RPAD(I_ACCOUNT_LINKING_CURSOR.IFSC_CODE, 18) ||
+                RPAD(I_ACCOUNT_LINKING_CURSOR.CURRENCY_CODE, 18) ||
+                RPAD(I_ACCOUNT_LINKING_CURSOR.CREATED_AT, 35) ||
+                RPAD(I_ACCOUNT_LINKING_CURSOR.IS_LOCKED, 18) ||
+                RPAD(I_ACCOUNT_LINKING_CURSOR.PASSWORD, 18) ||
+                RPAD(I_ACCOUNT_LINKING_CURSOR.ACTIVE_STATUS, 18)
+            );
+        END LOOP;
+    END IF;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                DBMS_OUTPUT.PUT_LINE('NO USER WITH THE USER ID: ' || P_USER_ID);
+    
+END ACCOUNT_LINKING;
+/

@@ -1,0 +1,96 @@
+create or replace PACKAGE BODY SCHEDULED_TRANSFER_PKG
+IS 
+    FUNCTION CHECK_NULLS_ADD_SCHEDULED_TRANSFER
+        (
+            P_FROM_ACCOUNT_ID_	ACCOUNT.ACCOUNT_ID%TYPE,
+         	P_TO_ACCOUNT_ID_	ACCOUNT.ACCOUNT_ID%TYPE,
+         	P_AMOUNT_	ACCOUNT.BALANCE%TYPE,
+         	P_SCHEDULED_DATE_	SCHEDULED_TRANSFER.SCHEDULED_DATE%TYPE 
+        )
+        RETURN BOOLEAN
+        IS
+        BEGIN
+            IF P_FROM_ACCOUNT_ID_ IS NULL THEN
+                RAISE_APPLICATION_ERROR(-20401, 'FROM ACCOUNT ID IS REQUIRED');
+                RETURN FALSE;
+            END IF;
+
+            IF P_TO_ACCOUNT_ID_ IS NULL THEN
+                RAISE_APPLICATION_ERROR(-20402, 'TO ACCOUNT ID IS REQUIRED');
+                RETURN FALSE;
+            END IF;
+
+            IF P_AMOUNT_ IS NULL THEN
+                RAISE_APPLICATION_ERROR(-20403, 'AMOUNT TO BE TRANSFERED IS REQUIRED');
+                RETURN FALSE;
+            END IF;
+
+            IF P_SCHEDULED_DATE_ IS NULL THEN
+                RAISE_APPLICATION_ERROR(-20404, 'SCHEDULED DATE IS REQUIRED');
+                RETURN FALSE;
+            END IF;
+
+            RETURN TRUE;
+        END CHECK_NULLS_ADD_SCHEDULED_TRANSFER;
+
+    PROCEDURE ADD_SCHEDULED_TRANSFER
+        (
+            P_FROM_ACCOUNT_ID	ACCOUNT.ACCOUNT_ID%TYPE,
+         	P_TO_ACCOUNT_ID	ACCOUNT.ACCOUNT_ID%TYPE,
+         	P_AMOUNT	ACCOUNT.BALANCE%TYPE,
+         	P_SCHEDULED_DATE SCHEDULED_TRANSFER.SCHEDULED_DATE%TYPE
+        ) IS
+            V_FROM_ACCOUNT_ID	ACCOUNT.ACCOUNT_ID%TYPE;
+            V_TO_ACCOUNT_ID	ACCOUNT.ACCOUNT_ID%TYPE;
+            V_TRANSFER_ID SCHEDULED_TRANSFER.TRANSFER_ID%TYPE;
+        BEGIN
+
+            IF SCHEDULED_TRANSFER_PKG.CHECK_NULLS_ADD_SCHEDULED_TRANSFER
+            (
+                P_FROM_ACCOUNT_ID,
+         	    P_TO_ACCOUNT_ID,
+         	    P_AMOUNT,
+         	    P_SCHEDULED_DATE
+            ) = TRUE THEN
+            
+
+                IF ACCOUNT_PKG.CHECK_ACCOUNT_ID_EXISTS(P_FROM_ACCOUNT_ID) = FALSE THEN
+                    RAISE_APPLICATION_ERROR(-20405,'SENDER DOES NOT EXIST');
+                END IF;
+
+                IF ACCOUNT_PKG.CHECK_ACCOUNT_ID_EXISTS(P_TO_ACCOUNT_ID) = FALSE THEN
+                    RAISE_APPLICATION_ERROR(-20406,'RECEIVER DOES NOT EXIST');
+                END IF;
+
+                IF ACCOUNT_PKG.GET_BALANCE_BY_ACCOUNT_ID(P_FROM_ACCOUNT_ID) < P_AMOUNT THEN
+                    RAISE_APPLICATION_ERROR(-20407,'INSUFFICIENT BALANCE');
+                END IF;
+
+                IF P_SCHEDULED_DATE < (SYSDATE - 1) THEN
+                    RAISE_APPLICATION_ERROR(-20408,'GIVE THE FUTURE DATE');
+                END IF;
+
+                INSERT INTO SCHEDULED_TRANSFER
+                (
+                    TRANSFER_ID, 
+                    FROM_ACCOUNT_ID, 
+                    TO_ACCOUNT_ID, 
+                    AMOUNT, 
+                    SCHEDULED_DATE, 
+                    CREATED_AT
+                ) 
+                VALUES
+                (
+                    'ST' || TRANSFER_ID_SEQ.NEXTVAL, 
+                    P_FROM_ACCOUNT_ID, P_TO_ACCOUNT_ID, P_AMOUNT, P_SCHEDULED_DATE, SYSDATE);
+
+                DBMS_OUTPUT.PUT_LINE('SCHEDULED TRANSFER ADDED AT' || ' : ' || SYSTIMESTAMP);
+                DBMS_OUTPUT.PUT_LINE(RPAD('FROM ACCOUNT ID ',18) || ' : ' || P_FROM_ACCOUNT_ID);
+                DBMS_OUTPUT.PUT_LINE(RPAD('TO ACCOUNT ID ',18) || ' : ' || P_TO_ACCOUNT_ID);
+                DBMS_OUTPUT.PUT_LINE(RPAD('AMOUNT ',18) || ' : ' || P_AMOUNT);
+            
+            END IF;
+
+        END ADD_SCHEDULED_TRANSFER;
+END SCHEDULED_TRANSFER_PKG;
+/
